@@ -33,3 +33,12 @@ SELECT * FROM refresh_tokens WHERE token = $1;
 UPDATE refresh_tokens 
 SET revoked_at = $1, updated_at = $2
 WHERE token = $3;
+
+-- name: UpdateUserData :one
+UPDATE users 
+SET hashed_password = $1, updated_at = $2, email = $3
+WHERE id = $4
+RETURNING *;
+
+-- name: GetUserData :one
+SELECT * FROM users WHERE id = $1;

@@ -272,3 +272,72 @@ func (cfg *apiConfig) revokeHandler(rw http.ResponseWriter, req *http.Request) {
 	rw.WriteHeader(http.StatusNoContent)
 
 }
+
+func (cfg *apiConfig) updateUserHandler(rw http.ResponseWriter, req *http.Request) {
+	var input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	authToken, err := auth.GetBearerToken(req.Header)
+	if authToken == "" || err != nil {
+		http.Error(rw, "Not Authorized", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(authToken, cfg.secret)
+	if err != nil {
+		http.Error(rw, "Not Authorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		http.Error(rw, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	if input.Email == "" || input.Password == "" {
+		http.Error(rw, "Email and password are required", http.StatusBadRequest)
+	}
+
+	hashedPassword, err := auth.HashPassword(input.Password)
+	if err != nil {
+		http.Error(rw, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	userDb, err := cfg.db.UpdateUserData(req.Context(), database.UpdateUserDataParams{
+		HashedPassword: hashedPassword,
+		UpdatedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		ID:    userID,
+		Email: input.Email,
+	})
+
+	if err != nil {
+		http.Error(rw, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	response := User{
+		ID:        userDb.ID,
+		Email:     userDb.Email,
+		CreatedAt: userDb.CreatedAt.Time,
+		UpdatedAt: userDb.UpdatedAt.Time,
+		Token:     authToken,
+	}
+
+	responseData, err := json.Marshal(response)
+	if err != nil {
+		http.Error(rw, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(responseData)
+
+}
