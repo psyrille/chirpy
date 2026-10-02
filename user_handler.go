@@ -204,6 +204,7 @@ func (cfg *apiConfig) userLoginHandler(rw http.ResponseWriter, req *http.Request
 		return
 	}
 
+	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	rw.Write(responseData)
 }
@@ -299,6 +300,7 @@ func (cfg *apiConfig) updateUserHandler(rw http.ResponseWriter, req *http.Reques
 
 	if input.Email == "" || input.Password == "" {
 		http.Error(rw, "Email and password are required", http.StatusBadRequest)
+		return
 	}
 
 	hashedPassword, err := auth.HashPassword(input.Password)
