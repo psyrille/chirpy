@@ -101,3 +101,26 @@ func MakeRefreshToken() string {
 	rand.Read(key)
 	return hex.EncodeToString(key)
 }
+
+func GetAPIKey(header http.Header) (string, error) {
+	if len(header.Values("Authorization")) <= 0 {
+		err := errors.New("Authorization header does not exist")
+		return "", err
+	}
+
+	bearerToken := http.Header.Get(header, "Authorization")
+	if bearerToken == "" {
+		return "", errors.New("Missing header key: Authorization")
+	}
+
+	token := strings.Split(bearerToken, " ")
+
+	if len(token) == 0 {
+		return "", errors.New("Authorization key does not exist")
+	}
+	if len(token) == 1 {
+		return "", errors.New("Please provide API key")
+	}
+
+	return token[1], nil
+}

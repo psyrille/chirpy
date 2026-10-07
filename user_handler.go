@@ -196,6 +196,7 @@ func (cfg *apiConfig) userLoginHandler(rw http.ResponseWriter, req *http.Request
 		Email:        user.Email,
 		Token:        jwtToken,
 		RefreshToken: dbRefreshToken.Token,
+		IsChirpyRed:  user.IsChirpyRed.Bool,
 	}
 
 	responseData, err := json.Marshal(response)

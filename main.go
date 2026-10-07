@@ -22,6 +22,7 @@ type apiConfig struct {
 	db             database.Queries
 	platform       string
 	secret         string
+	apiKey         string
 }
 
 type User struct {
@@ -31,6 +32,7 @@ type User struct {
 	Email        string    `json:"email"`
 	Token        string    `json:"token"`
 	RefreshToken string    `json:"refresh_token"`
+	IsChirpyRed  bool      `json:"is_chirpy_red"`
 }
 
 type Chirp struct {
@@ -56,6 +58,7 @@ func main() {
 	apiCfg := apiConfig{
 		platform: os.Getenv("PLATFORM"),
 		secret:   os.Getenv("JWT_SECRET"),
+		apiKey:   os.Getenv("POLKA_KEY"),
 	}
 	connectdb(os.Getenv("DB_URL"), &apiCfg)
 
@@ -75,6 +78,7 @@ func main() {
 	mux.HandleFunc("POST /api/login", apiCfg.userLoginHandler)
 	mux.HandleFunc("POST /api/refresh", apiCfg.refreshHandler)
 	mux.HandleFunc("POST /api/revoke", apiCfg.revokeHandler)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.polka)
 
 	srv.ListenAndServe()
 

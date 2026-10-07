@@ -42,3 +42,9 @@ RETURNING *;
 
 -- name: GetUserData :one
 SELECT * FROM users WHERE id = $1;
+
+-- name: UserUpgradeRed :one
+UPDATE users
+SET is_chirpy_red = true, updated_at = $2
+WHERE id = $1
+RETURNING *;
