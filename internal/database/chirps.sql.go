@@ -64,12 +64,51 @@ func (q *Queries) DeleteChirp(ctx context.Context, arg DeleteChirpParams) error 
 	return err
 }
 
-const getChirpByAuthorId = `-- name: GetChirpByAuthorId :many
-SELECT id, created_at, updated_at, body, user_id FROM chirps WHERE user_id = $1 ORDER BY created_at
+const getChirpByAuthorIdOrderByASC = `-- name: GetChirpByAuthorIdOrderByASC :many
+SELECT id, created_at, updated_at, body, user_id 
+FROM chirps 
+WHERE user_id = $1 
+ORDER BY created_at ASC
 `
 
-func (q *Queries) GetChirpByAuthorId(ctx context.Context, userID uuid.UUID) ([]Chirp, error) {
-	rows, err := q.db.QueryContext(ctx, getChirpByAuthorId, userID)
+func (q *Queries) GetChirpByAuthorIdOrderByASC(ctx context.Context, userID uuid.UUID) ([]Chirp, error) {
+	rows, err := q.db.QueryContext(ctx, getChirpByAuthorIdOrderByASC, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Chirp
+	for rows.Next() {
+		var i Chirp
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Body,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getChirpByAuthorIdOrderByDESC = `-- name: GetChirpByAuthorIdOrderByDESC :many
+SELECT id, created_at, updated_at, body, user_id 
+FROM chirps 
+WHERE user_id = $1 
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetChirpByAuthorIdOrderByDESC(ctx context.Context, userID uuid.UUID) ([]Chirp, error) {
+	rows, err := q.db.QueryContext(ctx, getChirpByAuthorIdOrderByDESC, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,11 +154,15 @@ func (q *Queries) GetChirpById(ctx context.Context, id uuid.UUID) (Chirp, error)
 }
 
 const getChirps = `-- name: GetChirps :many
-SELECT id, created_at, updated_at, body, user_id FROM chirps ORDER BY created_at
+SELECT id, created_at, updated_at, body, user_id 
+FROM chirps 
+ORDER BY 
+  CASE WHEN $1 = 'asc' THEN created_at END ASC,
+  CASE WHEN $1 = 'desc' THEN created_at END DESC
 `
 
-func (q *Queries) GetChirps(ctx context.Context) ([]Chirp, error) {
-	rows, err := q.db.QueryContext(ctx, getChirps)
+func (q *Queries) GetChirps(ctx context.Context, dollar_1 interface{}) ([]Chirp, error) {
+	rows, err := q.db.QueryContext(ctx, getChirps, dollar_1)
 	if err != nil {
 		return nil, err
 	}
